@@ -25,12 +25,14 @@ conda install -c pytorch pytorch torchvision torchaudio
 ```
 
 You may adjust the parameter in the code accordingly. Do read the ultralytics doc.
-```
 Run this way.
+ 
+
+
 ```
 (ultralytics-env) python main_yolo_region.py --source video/human.mp4 --weights yolo12n.pt --view-img --save-img
 ```
-```
+ 
 
 ## Video credit 
 https://www.youtube.com/watch?v=Mp6klx9oeZs&pp=ygUlY29weXJpZ2h0IGZyZWUgZHJvbmUgdmlldyBjYXIgdHJhZmZpYw%3D%3D 
