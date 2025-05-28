@@ -35,8 +35,7 @@ Run this way.
  
 
 ## Video credit 
-https://www.youtube.com/watch?v=Mp6klx9oeZs&pp=ygUlY29weXJpZ2h0IGZyZWUgZHJvbmUgdmlldyBjYXIgdHJhZmZpYw%3D%3D 
-
+https://www.youtube.com/watch?v=fOWLQbaZwUc
 
 ## Detail Doc   
 1. Object counting - https://docs.ultralytics.com/guides/object-counting/#objectcounter-arguments

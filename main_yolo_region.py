@@ -266,6 +266,35 @@ def run(
         else:
             print(f"Region '{region['name']}': No completed stays.")
 
+    # --- Write summary to result_summary.md ---
+    with open("result_summary.md", "w", encoding="utf-8") as f:
+        f.write("# Region Stay Time Summary\n\n")
+        f.write("| Region | Longest Stay (s) | Average Stay (s) |\n")
+        f.write("|--------|------------------|------------------|\n")
+        for region in counting_regions:
+            durations = region["track_durations"]
+            if durations:
+                longest = max(durations) / fps
+                average = sum(durations) / len(durations) / fps
+                f.write(f"| {region['name']} | {longest:.2f} | {average:.2f} |\n")
+            else:
+                f.write(f"| {region['name']} | - | - |\n")
+
+    # --- Write details to result_details.md ---
+    with open("result_details.md", "w", encoding="utf-8") as f:
+        f.write("# Region Stay Time Details\n\n")
+        for region in counting_regions:
+            f.write(f"## {region['name']}\n\n")
+            durations = region["track_durations"]
+            if durations:
+                f.write("| Stay # | Duration (s) |\n")
+                f.write("|--------|--------------|\n")
+                for idx, d in enumerate(durations, 1):
+                    f.write(f"| {idx} | {d/fps:.2f} |\n")
+                f.write("\n")
+            else:
+                f.write("No completed stays.\n\n")
+
 
 def parse_opt() -> argparse.Namespace:
     """Parse command line arguments for the region counting application."""
