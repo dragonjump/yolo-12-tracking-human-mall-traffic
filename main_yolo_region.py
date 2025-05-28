@@ -11,6 +11,7 @@ from shapely.geometry import Polygon
 from shapely.geometry.point import Point
 
 from ultralytics import YOLO
+from ultralytics import solutions
 from ultralytics.utils.files import increment_path
 from ultralytics.utils.plotting import Annotator, colors
 
@@ -23,7 +24,7 @@ counting_regions = [
         "polygon": Polygon([(50, 80), (250, 20), (450, 80), (400, 350), (100, 350)]),  # Polygon points
         "counts": 0,
         "dragging": False,
-        "region_color": (255, 42, 4),  # BGR Value
+        "region_color": (1, 255, 10),  # BGR Value
         "text_color": (255, 255, 255),  # Region Text Color
         "track_entries": {},  # {track_id: entry_frame}
         "track_durations": [],  # [duration_in_frames, ...]
@@ -35,8 +36,8 @@ counting_regions = [
         # "polygon": Polygon([(200, 250), (440, 250), (440, 550), (200, 550)]),  # Polygon points
         "counts": 0,
         "dragging": False,
-        "region_color": (37, 255, 225),  # BGR Value
-        "text_color": (0, 0, 0),  # Region Text Color
+        "region_color": (255, 11, 11),  # BGR Value
+        "text_color":  (255, 255, 255),  # Region Text Color
         "track_entries": {},
         "track_durations": [],
         "current_tracks": set(),
@@ -137,6 +138,19 @@ def run(
     # Setup Model
     model = YOLO(f"{weights}")
     model.to("cuda") if device == "0" else model.to("cpu")
+    
+    # Print class mapping
+    print("Model class mapping:")
+    for idx, name in model.names.items():
+        print(f"Class {idx}: {name}")
+
+    # Initialize Object Blurrer
+    blurrer = solutions.ObjectBlurrer(
+        show=False,  # We'll handle display ourselves
+        model=weights,  # Use the same model
+        classes=[0],  # Only blur people (class 0)
+        blur_ratio=0.145,  # Medium blur intensity
+    )
 
     # Extract classes names
     names = model.names
@@ -161,7 +175,7 @@ def run(
         vid_frame_count += 1
 
         # Extract the results
-        results = model.track(frame, persist=True, classes=classes)
+        results = model.track(frame, persist=True, conf=0.23, classes=None)
 
         # --- Stay time tracking ---
         # For each region, keep track of which track_ids are inside this frame
@@ -209,40 +223,92 @@ def run(
             # Update current_tracks
             region["current_tracks"] = curr_tracks
 
-        # Draw regions (Polygons/Rectangles)
-        for region in counting_regions:
+        # Draw all regions except the first
+        for region in counting_regions[1:]:
             region_label = str(region["counts"])
             region_color = region["region_color"]
-            region_text_color = region["text_color"]
+            region_text_color = (255, 255, 255)  # Use white for visibility
+            bg_color = (0, 0, 0)  # Black background for contrast
 
             polygon_coordinates = np.array(region["polygon"].exterior.coords, dtype=np.int32)
-            centroid_x, centroid_y = int(region["polygon"].centroid.x), int(region["polygon"].centroid.y)
+            # Find the top-right point of the polygon
+            top_right = max(polygon_coordinates, key=lambda p: (p[0], -p[1]))  # max x, min y
 
             text_size, _ = cv2.getTextSize(
                 region_label, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
             )
-            text_x = centroid_x - text_size[0] // 2
-            text_y = centroid_y + text_size[1] // 2
+            text_x = top_right[0] - text_size[0] - 5  # 5px padding from the right
+            text_y = top_right[1] + text_size[1] + 5  # 5px padding from the top
+
+            # Draw background rectangle for contrast
             cv2.rectangle(
                 frame,
-                (text_x - 5, text_y - text_size[1] - 5),
-                (text_x + text_size[0] + 5, text_y + 5),
-                region_color,
+                (text_x - 2, text_y - text_size[1] - 2),
+                (text_x + text_size[0] + 2, text_y + 2),
+                bg_color,
                 -1,
             )
+            # Draw the count text
             cv2.putText(
                 frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color, line_thickness
             )
             cv2.polylines(frame, [polygon_coordinates], isClosed=True, color=region_color, thickness=region_thickness)
 
+        # Draw the first region last (on top)
+        region = counting_regions[0]
+        region_label = str(region["counts"])
+        region_color = region["region_color"]
+        region_text_color = (255, 255, 255)
+        bg_color = (0, 0, 0)
+
+        polygon_coordinates = np.array(region["polygon"].exterior.coords, dtype=np.int32)
+        top_right = max(polygon_coordinates, key=lambda p: (p[0], -p[1]))
+
+        text_size, _ = cv2.getTextSize(
+            region_label, cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.7, thickness=line_thickness
+        )
+        text_x = top_right[0] - text_size[0] - 5
+        text_y = top_right[1] + text_size[1] + 5
+
+        cv2.rectangle(
+            frame,
+            (text_x - 2, text_y - text_size[1] - 2),
+            (text_x + text_size[0] + 2, text_y + 2),
+            bg_color,
+            -1,
+        )
+        cv2.putText(
+            frame, region_label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, region_text_color, line_thickness
+        )
+        cv2.polylines(frame, [polygon_coordinates], isClosed=True, color=region_color, thickness=region_thickness)
+
+        # Apply blurring to people in the frame
+        blurred_results = blurrer(frame.copy())  # Use a copy to avoid potential issues
+        blurred_frame = blurred_results.plot_im
+
+        # --- Fallback: Manually blur all detected person boxes ---
+        if results[0].boxes.is_track:
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            clss = results[0].boxes.cls.cpu().tolist()
+            for box, cls in zip(boxes, clss):
+                if model.names[int(cls)].lower() == "person":
+                    x1, y1, x2, y2 = map(int, box)
+                    # Ensure coordinates are within frame bounds
+                    x1, y1 = max(0, x1), max(0, y1)
+                    x2, y2 = min(frame.shape[1], x2), min(frame.shape[0], y2)
+                    roi = blurred_frame[y1:y2, x1:x2]
+                    if roi.size > 0:
+                        blurred_roi = cv2.GaussianBlur(roi, (0, 0), sigmaX=3.5, sigmaY=3.5)
+                        blurred_frame[y1:y2, x1:x2] = blurred_roi
+
         if view_img:
             if vid_frame_count == 1:
                 cv2.namedWindow("Ultralytics YOLO Region Counter Movable")
                 cv2.setMouseCallback("Ultralytics YOLO Region Counter Movable", mouse_callback)
-            cv2.imshow("Ultralytics YOLO Region Counter Movable", frame)
+            cv2.imshow("Ultralytics YOLO Region Counter Movable", blurred_frame)
 
         if save_img:
-            video_writer.write(frame)
+            video_writer.write(blurred_frame)
 
         for region in counting_regions:  # Reinitialize count for each region
             region["counts"] = 0
