@@ -322,6 +322,7 @@ def run(
     cv2.destroyAllWindows()
 
     # --- Print stay time summary ---
+    # @todo : add a counter for the people entering the shop as another region
     print("\nRegion Stay Time Summary:")
     for region in counting_regions:
         durations = region["track_durations"]
