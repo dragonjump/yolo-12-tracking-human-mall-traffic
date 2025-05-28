@@ -1,8 +1,8 @@
 
  
 # Video human Counter  
-This repository counts video humans. You can use it for video or live stream.
-This approach uses a hexagonal region counter. Whenever the human crosses the line, we count them and track the time the human stays inside. 
+ 
+This repository provides a solution for counting people in videos or live streams. It uses a hexagonal region-based counter: each time a person crosses a defined line, the system counts them and tracks how long they remain within the beyond 1 multiple regions. The result output then comapres result.
 
 
 ## Demo  
