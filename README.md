@@ -1,12 +1,9 @@
 
  
-# Video Car Counter  
-This repository counts video cars. You can use it for video or live stream.
-This approach uses a simple line counter. Whenever the car crosses the line, we count them out. 
+# Video human Counter  
+This repository counts video humans. You can use it for video or live stream.
+This approach uses a hexagonal region counter. Whenever the human crosses the line, we count them and track the time the human stays inside. 
 
-```
-(ultralytics-env) python main_yolo_region.py --source video/human.mp4 --weights yolo12n.pt --view-img --save-img
-```
 
 ## Demo  
 See `demo.gif`
@@ -16,7 +13,8 @@ See `demo.gif`
 
 
 ## Setup 
-Search online how setup conda. 
+1. Download `yolo12n.pt`
+2.Search online how setup conda. 
 Once you setup, create a conda environment with Python 3.11:
 ```
 conda create --name ultralytics-env python=3.11 -y
@@ -28,18 +26,10 @@ conda install -c pytorch pytorch torchvision torchaudio
 
 You may adjust the parameter in the code accordingly. Do read the ultralytics doc.
 ```
-# Initialize object counter object
-counter = solutions.ObjectCounter(
-    show=True,  # display the output
-    show_in=False, #  count in
-    show_out=True, # count out
-    conf=0.6, # confidence level
-    tracker="bytetrack.yaml",
-    region=region_points,  # pass region points
-    model="yolo11n-obb.pt",  # model="yolo11n-obb.pt" for object counting with OBB model.
-    # classes=[0, 2],  # count specific classes i.e. person and car with COCO pretrained model.
- 
-)
+Run this way.
+```
+(ultralytics-env) python main_yolo_region.py --source video/human.mp4 --weights yolo12n.pt --view-img --save-img
+```
 ```
 
 ## Video credit 
