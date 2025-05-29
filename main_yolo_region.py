@@ -21,7 +21,7 @@ current_region = None
 counting_regions = [
     {
         "name": "Upstairs Shop - YOLO Polygon Region",
-        "polygon": Polygon([(50, 80), (250, 20), (450, 80), (400, 350), (100, 350)]),  # Polygon points
+        "polygon": Polygon([(40, 64), (230, 4), (420, 64), (373, 334), (88, 334)]),  # Polygon points (transformed)
         "counts": 0,
         "dragging": False,
         "region_color": (1, 255, 10),  # BGR Value
@@ -31,8 +31,8 @@ counting_regions = [
         "current_tracks": set(),
     },
     {
-        "name": "Downstairs Sales Shop - YOLO Rectangle Region",
-        "polygon": Polygon([(250, 780), (450, 720), (650, 780), (600, 1050), (300, 1050)]),  # Polygon points
+        "name": "Downstairs Sales Shop - YOLO   Region",
+        "polygon": Polygon([(280, 628), (433, 582), (586, 628), (548, 955), (319, 955)]),  # Polygon points (smaller, up, left)
         # "polygon": Polygon([(200, 250), (440, 250), (440, 550), (200, 550)]),  # Polygon points
         "counts": 0,
         "dragging": False,
@@ -322,7 +322,7 @@ def run(
     cv2.destroyAllWindows()
 
     # --- Print stay time summary ---
-    # @todo : add a counter for the people entering the shop as another region
+    # @todo : fix the polygon points for the   region to be more accurate
     print("\nRegion Stay Time Summary:")
     for region in counting_regions:
         durations = region["track_durations"]
